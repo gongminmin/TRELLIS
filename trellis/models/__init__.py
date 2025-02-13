@@ -5,7 +5,6 @@ __attributes = {
     'SparseStructureDecoder': 'sparse_structure_vae',
     'SparseStructureFlowModel': 'sparse_structure_flow',
     'SLatEncoder': 'structured_latent_vae',
-    'SLatGaussianDecoder': 'structured_latent_vae',
     'SLatMeshDecoder': 'structured_latent_vae',
     'SLatFlowModel': 'structured_latent_flow',
 }
@@ -65,5 +64,5 @@ def from_pretrained(path: str, **kwargs):
 if __name__ == '__main__':
     from .sparse_structure_vae import SparseStructureEncoder, SparseStructureDecoder
     from .sparse_structure_flow import SparseStructureFlowModel
-    from .structured_latent_vae import SLatEncoder, SLatGaussianDecoder, SLatMeshDecoder
+    from .structured_latent_vae import SLatEncoder, SLatMeshDecoder
     from .structured_latent_flow import SLatFlowModel

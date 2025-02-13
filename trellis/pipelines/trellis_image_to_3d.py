@@ -195,7 +195,7 @@ class TrellisImageTo3DPipeline(Pipeline):
     def decode_slat(
         self,
         slat: sp.SparseTensor,
-        formats: List[str] = ['mesh', 'gaussian'],
+        formats: List[str] = ['mesh'],
     ) -> dict:
         """
         Decode the structured latent.
@@ -210,8 +210,6 @@ class TrellisImageTo3DPipeline(Pipeline):
         ret = {}
         if 'mesh' in formats:
             ret['mesh'] = self.models['slat_decoder_mesh'](slat)
-        if 'gaussian' in formats:
-            ret['gaussian'] = self.models['slat_decoder_gs'](slat)
         return ret
     
     def sample_slat(
@@ -257,7 +255,7 @@ class TrellisImageTo3DPipeline(Pipeline):
         seed: int = 42,
         sparse_structure_sampler_params: dict = {},
         slat_sampler_params: dict = {},
-        formats: List[str] = ['mesh', 'gaussian'],
+        formats: List[str] = ['mesh'],
         preprocess_image: bool = True,
     ) -> dict:
         """
@@ -343,7 +341,7 @@ class TrellisImageTo3DPipeline(Pipeline):
         seed: int = 42,
         sparse_structure_sampler_params: dict = {},
         slat_sampler_params: dict = {},
-        formats: List[str] = ['mesh', 'gaussian'],
+        formats: List[str] = ['mesh'],
         preprocess_image: bool = True,
         mode: Literal['stochastic', 'multidiffusion'] = 'stochastic',
     ) -> dict:

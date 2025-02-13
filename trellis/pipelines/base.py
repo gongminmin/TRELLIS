@@ -38,7 +38,7 @@ class Pipeline:
 
         _models = {}
         for k, v in args['models'].items():
-            if k != 'slat_decoder_rf':
+            if k not in ('slat_decoder_rf', 'slat_decoder_gs'):
                 _models[k] = models.from_pretrained(f"{path}/{v}")
 
         new_pipeline = Pipeline(_models)

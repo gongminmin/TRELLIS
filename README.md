@@ -114,11 +114,6 @@
     pip install -r requirements.txt
     ```
 
-    - **Install extra packages with dependencies on PyTorch:**
-    ```sh
-    pip install -r requirements_extra.txt
-    ```
-
     **Known Issues**
 
       1. The ROCm platform is not supported. Additional work may be necessary to resolve these issues.
