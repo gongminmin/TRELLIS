@@ -4,8 +4,8 @@ from tqdm import tqdm
 import utils3d
 from PIL import Image
 
-from ..renderers import OctreeRenderer, GaussianRenderer, MeshRenderer
-from ..representations import Octree, Gaussian, MeshExtractResult
+from ..renderers import GaussianRenderer, MeshRenderer
+from ..representations import Gaussian, MeshExtractResult
 from ..modules import sparse as sp
 from .random_utils import sphere_hammersley_sequence
 
@@ -41,15 +41,7 @@ def yaw_pitch_r_fov_to_extrinsics_intrinsics(yaws, pitchs, rs, fovs):
 
 
 def render_frames(sample, extrinsics, intrinsics, options={}, colors_overwrite=None, verbose=True, **kwargs):
-    if isinstance(sample, Octree):
-        renderer = OctreeRenderer()
-        renderer.rendering_options.resolution = options.get('resolution', 512)
-        renderer.rendering_options.near = options.get('near', 0.8)
-        renderer.rendering_options.far = options.get('far', 1.6)
-        renderer.rendering_options.bg_color = options.get('bg_color', (0, 0, 0))
-        renderer.rendering_options.ssaa = options.get('ssaa', 4)
-        renderer.pipe.primitive = sample.primitive
-    elif isinstance(sample, Gaussian):
+    if isinstance(sample, Gaussian):
         renderer = GaussianRenderer()
         renderer.rendering_options.resolution = options.get('resolution', 512)
         renderer.rendering_options.near = options.get('near', 0.8)

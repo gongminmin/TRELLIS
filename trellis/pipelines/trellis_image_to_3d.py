@@ -4,15 +4,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from tqdm import tqdm
-from easydict import EasyDict as edict
 from torchvision import transforms
 from PIL import Image
 import rembg
 from .base import Pipeline
 from . import samplers
 from ..modules import sparse as sp
-from ..representations import Gaussian, Strivec, MeshExtractResult
 
 
 class TrellisImageTo3DPipeline(Pipeline):
@@ -114,7 +111,7 @@ class TrellisImageTo3DPipeline(Pipeline):
         output = output.crop(bbox)  # type: ignore
         output = output.resize((518, 518), Image.Resampling.LANCZOS)
         output = np.array(output).astype(np.float32) / 255
-        output = output[:, :, :3] * output[:, :, 3:4]
+        output = output[:, :, :3] * (output[:, :, 3:4] > 0.8)
         output = Image.fromarray((output * 255).astype(np.uint8))
         return output
 
@@ -198,7 +195,7 @@ class TrellisImageTo3DPipeline(Pipeline):
     def decode_slat(
         self,
         slat: sp.SparseTensor,
-        formats: List[str] = ['mesh', 'gaussian', 'radiance_field'],
+        formats: List[str] = ['mesh', 'gaussian'],
     ) -> dict:
         """
         Decode the structured latent.
@@ -215,8 +212,6 @@ class TrellisImageTo3DPipeline(Pipeline):
             ret['mesh'] = self.models['slat_decoder_mesh'](slat)
         if 'gaussian' in formats:
             ret['gaussian'] = self.models['slat_decoder_gs'](slat)
-        if 'radiance_field' in formats:
-            ret['radiance_field'] = self.models['slat_decoder_rf'](slat)
         return ret
     
     def sample_slat(
@@ -262,7 +257,7 @@ class TrellisImageTo3DPipeline(Pipeline):
         seed: int = 42,
         sparse_structure_sampler_params: dict = {},
         slat_sampler_params: dict = {},
-        formats: List[str] = ['mesh', 'gaussian', 'radiance_field'],
+        formats: List[str] = ['mesh', 'gaussian'],
         preprocess_image: bool = True,
     ) -> dict:
         """
@@ -348,7 +343,7 @@ class TrellisImageTo3DPipeline(Pipeline):
         seed: int = 42,
         sparse_structure_sampler_params: dict = {},
         slat_sampler_params: dict = {},
-        formats: List[str] = ['mesh', 'gaussian', 'radiance_field'],
+        formats: List[str] = ['mesh', 'gaussian'],
         preprocess_image: bool = True,
         mode: Literal['stochastic', 'multidiffusion'] = 'stochastic',
     ) -> dict:

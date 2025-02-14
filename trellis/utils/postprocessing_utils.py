@@ -15,7 +15,7 @@ from PIL import Image
 from .random_utils import sphere_hammersley_sequence
 from .render_utils import render_multiview
 from ..renderers import GaussianRenderer
-from ..representations import Strivec, Gaussian, MeshExtractResult
+from ..representations import Gaussian, MeshExtractResult
 
 
 @torch.no_grad()
@@ -397,7 +397,7 @@ def bake_texture(
 
 
 def to_glb(
-    app_rep: Union[Strivec, Gaussian, MeshExtractResult],
+    app_rep: Union[Gaussian, MeshExtractResult],
     mesh: MeshExtractResult,
     simplify: float = 0.95,
     fill_holes: bool = True,
@@ -410,7 +410,7 @@ def to_glb(
     Convert a generated asset to a glb file.
 
     Args:
-        app_rep (Union[Strivec, Gaussian, MeshExtractResult]): Appearance representation.
+        app_rep (Union[Gaussian, MeshExtractResult]): Appearance representation.
         mesh (MeshExtractResult): Extracted mesh.
         simplify (float): Ratio of faces to remove in simplification.
         fill_holes (bool): Whether to fill holes in the mesh.
