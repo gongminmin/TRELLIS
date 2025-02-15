@@ -1,5 +1,5 @@
 import os
-# os.environ['ATTN_BACKEND'] = 'xformers'   # Can be 'flash-attn' or 'xformers', default is 'flash-attn'
+os.environ['ATTN_BACKEND'] = 'xformers'     # Can be 'flash-attn' or 'xformers', default is 'flash-attn'
 os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default is 'auto'.
                                             # 'auto' is faster but will do benchmarking at the beginning.
                                             # Recommended to set to 'native' if run only once.
@@ -36,11 +36,9 @@ outputs = pipeline.run_multi_image(
     },
 )
 # outputs is a dictionary containing generated 3D assets in different formats:
-# - outputs['gaussian']: a list of 3D Gaussians
-# - outputs['radiance_field']: a list of radiance fields
 # - outputs['mesh']: a list of meshes
 
-video_gs = render_utils.render_video(outputs['gaussian'][0])['color']
-video_mesh = render_utils.render_video(outputs['mesh'][0])['normal']
-video = [np.concatenate([frame_gs, frame_mesh], axis=1) for frame_gs, frame_mesh in zip(video_gs, video_mesh)]
+video_color = render_utils.render_video(outputs['mesh'][0])['color']
+video_normal = render_utils.render_video(outputs['mesh'][0])['normal']
+video = [np.concatenate([frame_color, frame_normal], axis=1) for frame_color, frame_normal in zip(video_color, video_normal)]
 imageio.mimsave("sample_multi.mp4", video, fps=30)
