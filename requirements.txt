@@ -1,7 +1,7 @@
 --extra-index-url https://download.pytorch.org/whl/cu124
-torch==2.5.1+cu124
-torchvision==0.20.1+cu124
-xformers==0.0.28.post3
+torch==2.6.0+cu124
+torchvision==0.21.0+cu124
+xformers==0.0.29.post2
 
 pillow==10.2.0
 imageio==2.37.0
@@ -26,6 +26,3 @@ git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057
 git+https://github.com/NVlabs/nvdiffrast.git
 
 spconv-cu124==2.3.8
-
-gradio==4.44.1
-gradio_litmodel3d==0.0.1
