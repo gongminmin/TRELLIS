@@ -36,9 +36,9 @@ outputs = pipeline.run_multi_image(
     },
 )
 # outputs is a dictionary containing generated 3D assets in different formats:
-# - outputs['mesh']: a list of meshes
+# - outputs: a list of meshes
 
-video_color = render_utils.render_video(outputs['mesh'][0])['color']
-video_normal = render_utils.render_video(outputs['mesh'][0])['normal']
+video_color = render_utils.render_video(outputs[0])['color']
+video_normal = render_utils.render_video(outputs[0])['normal']
 video = [np.concatenate([frame_color, frame_normal], axis=1) for frame_color, frame_normal in zip(video_color, video_normal)]
 imageio.mimsave("sample_multi.mp4", video, fps=30)

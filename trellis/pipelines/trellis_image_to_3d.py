@@ -195,21 +195,17 @@ class TrellisImageTo3DPipeline(Pipeline):
     def decode_slat(
         self,
         slat: sp.SparseTensor,
-        formats: List[str] = ['mesh'],
-    ) -> dict:
+    ) -> list:
         """
         Decode the structured latent.
 
         Args:
             slat (sp.SparseTensor): The structured latent.
-            formats (List[str]): The formats to decode the structured latent to.
 
         Returns:
-            dict: The decoded structured latent.
+            list: A list of decoded structured latent.
         """
-        ret = {}
-        if 'mesh' in formats:
-            ret['mesh'] = self.models['slat_decoder_mesh'](slat)
+        ret = self.models['slat_decoder_mesh'](slat)
         return ret
     
     def sample_slat(
@@ -255,9 +251,8 @@ class TrellisImageTo3DPipeline(Pipeline):
         seed: int = 42,
         sparse_structure_sampler_params: dict = {},
         slat_sampler_params: dict = {},
-        formats: List[str] = ['mesh'],
         preprocess_image: bool = True,
-    ) -> dict:
+    ) -> list:
         """
         Run the pipeline.
 
@@ -274,7 +269,7 @@ class TrellisImageTo3DPipeline(Pipeline):
         torch.manual_seed(seed)
         coords = self.sample_sparse_structure(cond, num_samples, sparse_structure_sampler_params)
         slat = self.sample_slat(cond, coords, slat_sampler_params)
-        return self.decode_slat(slat, formats)
+        return self.decode_slat(slat)
 
     @contextmanager
     def inject_sampler_multi_image(
@@ -341,10 +336,9 @@ class TrellisImageTo3DPipeline(Pipeline):
         seed: int = 42,
         sparse_structure_sampler_params: dict = {},
         slat_sampler_params: dict = {},
-        formats: List[str] = ['mesh'],
         preprocess_image: bool = True,
         mode: Literal['stochastic', 'multidiffusion'] = 'stochastic',
-    ) -> dict:
+    ) -> list:
         """
         Run the pipeline with multiple images as condition
 
@@ -366,4 +360,4 @@ class TrellisImageTo3DPipeline(Pipeline):
         slat_steps = {**self.slat_sampler_params, **slat_sampler_params}.get('steps')
         with self.inject_sampler_multi_image('slat_sampler', len(images), slat_steps, mode=mode):
             slat = self.sample_slat(cond, coords, slat_sampler_params)
-        return self.decode_slat(slat, formats)
+        return self.decode_slat(slat)

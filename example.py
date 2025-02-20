@@ -31,18 +31,18 @@ outputs = pipeline.run(
     # },
 )
 # outputs is a dictionary containing generated 3D assets in different formats:
-# - outputs['mesh']: a list of meshes
+# - outputs: a list of meshes
 
 # Render the outputs
-video = render_utils.render_video(outputs['mesh'][0])['color']
+video = render_utils.render_video(outputs[0])['color']
 imageio.mimsave("sample_color.mp4", video, fps=30)
-video = render_utils.render_video(outputs['mesh'][0])['normal']
+video = render_utils.render_video(outputs[0])['normal']
 imageio.mimsave("sample_normal.mp4", video, fps=30)
 
 # GLB files can be extracted from the outputs
 glb = postprocessing_utils.to_glb(
-    outputs['mesh'][0],
-    outputs['mesh'][0],
+    outputs[0],
+    outputs[0],
     # Optional parameters
     simplify=0.95,          # Ratio of triangles to remove in the simplification process
     texture_size=1024,      # Size of the texture used for the GLB
