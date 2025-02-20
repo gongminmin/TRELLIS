@@ -3,12 +3,11 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from easydict import EasyDict as edict
-from .base import Sampler
 from .classifier_free_guidance_mixin import ClassifierFreeGuidanceSamplerMixin
 from .guidance_interval_mixin import GuidanceIntervalSamplerMixin
 
 
-class FlowEulerSampler(Sampler):
+class FlowEulerSampler:
     """
     Generate samples from a flow-matching model using Euler sampling.
 

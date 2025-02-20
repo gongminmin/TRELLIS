@@ -6,12 +6,11 @@ import torch.nn.functional as F
 import numpy as np
 from torchvision import transforms
 from PIL import Image
-from .base import Pipeline
 from . import samplers
+from .. import models
 from ..modules import sparse as sp
 
-
-class TrellisImageTo3DPipeline(Pipeline):
+class TrellisImageTo3DPipeline:
     """
     Pipeline for inferring Trellis image-to-3D models.
 
@@ -25,19 +24,26 @@ class TrellisImageTo3DPipeline(Pipeline):
     def __init__(
         self,
         models: dict[str, nn.Module] = None,
-        sparse_structure_sampler: samplers.Sampler = None,
-        slat_sampler: samplers.Sampler = None,
+        sparse_structure_sampler = None,
+        sparse_structure_sampler_params = {},
+        slat_sampler = None,
+        slat_sampler_params = {},
         slat_normalization: dict = None,
         image_cond_model: str = None,
     ):
-        if models is None:
-            return
-        super().__init__(models)
+        assert(models != None)
+
+        self.models = models
+        for model in self.models.values():
+            model.eval()
+
         self.sparse_structure_sampler = sparse_structure_sampler
+        self.sparse_structure_sampler_params = sparse_structure_sampler_params
+
         self.slat_sampler = slat_sampler
-        self.sparse_structure_sampler_params = {}
-        self.slat_sampler_params = {}
+        self.slat_sampler_params = slat_sampler_params
         self.slat_normalization = slat_normalization
+
         self._init_image_cond_model(image_cond_model)
 
     @staticmethod
@@ -48,23 +54,58 @@ class TrellisImageTo3DPipeline(Pipeline):
         Args:
             path (str): The path to the model. Can be either local path or a Hugging Face repository.
         """
-        pipeline = super(TrellisImageTo3DPipeline, TrellisImageTo3DPipeline).from_pretrained(path)
-        new_pipeline = TrellisImageTo3DPipeline()
-        new_pipeline.__dict__ = pipeline.__dict__
-        args = pipeline._pretrained_args
 
-        new_pipeline.sparse_structure_sampler = getattr(samplers, args['sparse_structure_sampler']['name'])(**args['sparse_structure_sampler']['args'])
-        new_pipeline.sparse_structure_sampler_params = args['sparse_structure_sampler']['params']
+        import os
+        import json
+        is_local = os.path.exists(f"{path}/pipeline.json")
 
-        new_pipeline.slat_sampler = getattr(samplers, args['slat_sampler']['name'])(**args['slat_sampler']['args'])
-        new_pipeline.slat_sampler_params = args['slat_sampler']['params']
+        if is_local:
+            config_file = f"{path}/pipeline.json"
+        else:
+            from huggingface_hub import hf_hub_download
+            config_file = hf_hub_download(path, "pipeline.json")
 
-        new_pipeline.slat_normalization = args['slat_normalization']
+        with open(config_file, 'r') as f:
+            args = json.load(f)['args']
 
-        new_pipeline._init_image_cond_model(args['image_cond_model'])
+        _models = {}
+        for k, v in args['models'].items():
+            if k not in ('slat_decoder_rf', 'slat_decoder_gs'):
+                _models[k] = models.from_pretrained(f"{path}/{v}")
+
+        sparse_structure_sampler = getattr(samplers, args['sparse_structure_sampler']['name'])(**args['sparse_structure_sampler']['args'])
+        sparse_structure_sampler_params = args['sparse_structure_sampler']['params']
+        slat_sampler = getattr(samplers, args['slat_sampler']['name'])(**args['slat_sampler']['args'])
+        slat_sampler_params = args['slat_sampler']['params']
+        slat_normalization = args['slat_normalization']
+        image_cond_model = args['image_cond_model']
+
+        new_pipeline = TrellisImageTo3DPipeline(
+            _models,
+            sparse_structure_sampler,
+            sparse_structure_sampler_params,
+            slat_sampler,
+            slat_sampler_params,
+            slat_normalization,
+            image_cond_model
+        )
 
         return new_pipeline
-    
+
+    @property
+    def device(self) -> torch.device:
+        for model in self.models.values():
+            if hasattr(model, 'device'):
+                return model.device
+        for model in self.models.values():
+            if hasattr(model, 'parameters'):
+                return next(model.parameters()).device
+        raise RuntimeError("No device found.")
+
+    def to(self, device: torch.device) -> None:
+        for model in self.models.values():
+            model.to(device)
+
     def _init_image_cond_model(self, name: str):
         """
         Initialize the image conditioning model.
@@ -124,7 +165,7 @@ class TrellisImageTo3DPipeline(Pipeline):
         features = self.models['image_cond_model'](image, is_training=True)['x_prenorm']
         patchtokens = F.layer_norm(features, features.shape[-1:])
         return patchtokens
-        
+
     def get_cond(self, image: Union[torch.Tensor, list[Image.Image]]) -> dict:
         """
         Get the conditioning information for the model.
@@ -190,7 +231,7 @@ class TrellisImageTo3DPipeline(Pipeline):
         """
         ret = self.models['slat_decoder_mesh'](slat)
         return ret
-    
+
     def sample_slat(
         self,
         cond: dict,
