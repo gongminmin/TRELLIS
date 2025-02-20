@@ -1,7 +1,6 @@
 from typing import *
 import torch
 import torch.nn as nn
-from . import BACKEND
 SparseTensorData = None # Lazy import
 
 
@@ -40,10 +39,7 @@ class SparseTensor:
         global SparseTensorData
         if SparseTensorData is None:
             import importlib
-            if BACKEND == 'torchsparse':
-                SparseTensorData = importlib.import_module('torchsparse').SparseTensor
-            elif BACKEND == 'spconv':
-                SparseTensorData = importlib.import_module('spconv.pytorch').SparseConvTensor
+            SparseTensorData = importlib.import_module('spconv.pytorch').SparseConvTensor
                 
         method_id = 0
         if len(args) != 0:
@@ -70,12 +66,9 @@ class SparseTensor:
                 shape = self.__cal_shape(feats, coords)
             if layout is None:
                 layout = self.__cal_layout(coords, shape[0])
-            if BACKEND == 'torchsparse':
-                self.data = SparseTensorData(feats, coords, **kwargs)
-            elif BACKEND == 'spconv':
-                spatial_shape = list(coords.max(0)[0] + 1)[1:]
-                self.data = SparseTensorData(feats.reshape(feats.shape[0], -1), coords, spatial_shape, shape[0], **kwargs)
-                self.data._features = feats
+            spatial_shape = list(coords.max(0)[0] + 1)[1:]
+            self.data = SparseTensorData(feats.reshape(feats.shape[0], -1), coords, spatial_shape, shape[0], **kwargs)
+            self.data._features = feats
         elif method_id == 1:
             data, shape, layout = args + (None,) * (3 - len(args))
             if 'data' in kwargs:
@@ -124,31 +117,19 @@ class SparseTensor:
 
     @property
     def feats(self) -> torch.Tensor:
-        if BACKEND == 'torchsparse':
-            return self.data.F
-        elif BACKEND == 'spconv':
-            return self.data.features
+        return self.data.features
     
     @feats.setter
     def feats(self, value: torch.Tensor):
-        if BACKEND == 'torchsparse':
-            self.data.F = value
-        elif BACKEND == 'spconv':
-            self.data.features = value
+        self.data.features = value
 
     @property
     def coords(self) -> torch.Tensor:
-        if BACKEND == 'torchsparse':
-            return self.data.C
-        elif BACKEND == 'spconv':
-            return self.data.indices
+        return self.data.indices
         
     @coords.setter
     def coords(self, value: torch.Tensor):
-        if BACKEND == 'torchsparse':
-            self.data.C = value
-        elif BACKEND == 'spconv':
-            self.data.indices = value
+        self.data.indices = value
 
     @property
     def dtype(self):
@@ -213,10 +194,7 @@ class SparseTensor:
         return self.replace(new_feats, new_coords)
 
     def dense(self) -> torch.Tensor:
-        if BACKEND == 'torchsparse':
-            return self.data.dense()
-        elif BACKEND == 'spconv':
-            return self.data.dense()
+        return self.data.dense()
 
     def reshape(self, *shape) -> 'SparseTensor':
         new_feats = self.feats.reshape(self.feats.shape[0], *shape)
@@ -228,33 +206,24 @@ class SparseTensor:
     def replace(self, feats: torch.Tensor, coords: Optional[torch.Tensor] = None) -> 'SparseTensor':
         new_shape = [self.shape[0]]
         new_shape.extend(feats.shape[1:])
-        if BACKEND == 'torchsparse':
-            new_data = SparseTensorData(
-                feats=feats,
-                coords=self.data.coords if coords is None else coords,
-                stride=self.data.stride,
-                spatial_range=self.data.spatial_range,
-            )
-            new_data._caches = self.data._caches
-        elif BACKEND == 'spconv':
-            new_data = SparseTensorData(
-                self.data.features.reshape(self.data.features.shape[0], -1),
-                self.data.indices,
-                self.data.spatial_shape,
-                self.data.batch_size,
-                self.data.grid,
-                self.data.voxel_num,
-                self.data.indice_dict
-            )
-            new_data._features = feats
-            new_data.benchmark = self.data.benchmark
-            new_data.benchmark_record = self.data.benchmark_record
-            new_data.thrust_allocator = self.data.thrust_allocator
-            new_data._timer = self.data._timer
-            new_data.force_algo = self.data.force_algo
-            new_data.int8_scale = self.data.int8_scale
-            if coords is not None:
-                new_data.indices = coords
+        new_data = SparseTensorData(
+            self.data.features.reshape(self.data.features.shape[0], -1),
+            self.data.indices,
+            self.data.spatial_shape,
+            self.data.batch_size,
+            self.data.grid,
+            self.data.voxel_num,
+            self.data.indice_dict
+        )
+        new_data._features = feats
+        new_data.benchmark = self.data.benchmark
+        new_data.benchmark_record = self.data.benchmark_record
+        new_data.thrust_allocator = self.data.thrust_allocator
+        new_data._timer = self.data._timer
+        new_data.force_algo = self.data.force_algo
+        new_data.int8_scale = self.data.int8_scale
+        if coords is not None:
+            new_data.indices = coords
         new_tensor = SparseTensor(new_data, shape=torch.Size(new_shape), layout=self.layout, scale=self._scale, spatial_cache=self._spatial_cache)
         return new_tensor
 
