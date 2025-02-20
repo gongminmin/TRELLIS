@@ -6,7 +6,6 @@ import torch.nn.functional as F
 import numpy as np
 from torchvision import transforms
 from PIL import Image
-import rembg
 from .base import Pipeline
 from . import samplers
 from ..modules import sparse as sp
@@ -39,7 +38,6 @@ class TrellisImageTo3DPipeline(Pipeline):
         self.sparse_structure_sampler_params = {}
         self.slat_sampler_params = {}
         self.slat_normalization = slat_normalization
-        self.rembg_session = None
         self._init_image_cond_model(image_cond_model)
 
     @staticmethod
@@ -83,23 +81,8 @@ class TrellisImageTo3DPipeline(Pipeline):
         """
         Preprocess the input image.
         """
-        # if has alpha channel, use it directly; otherwise, remove background
-        has_alpha = False
-        if input.mode == 'RGBA':
-            alpha = np.array(input)[:, :, 3]
-            if not np.all(alpha == 255):
-                has_alpha = True
-        if has_alpha:
-            output = input
-        else:
-            input = input.convert('RGB')
-            max_size = max(input.size)
-            scale = min(1, 1024 / max_size)
-            if scale < 1:
-                input = input.resize((int(input.width * scale), int(input.height * scale)), Image.Resampling.LANCZOS)
-            if getattr(self, 'rembg_session', None) is None:
-                self.rembg_session = rembg.new_session('u2net')
-            output = rembg.remove(input, session=self.rembg_session)
+        assert(input.mode == 'RGBA')
+        output = input
         output_np = np.array(output)
         alpha = output_np[:, :, 3]
         bbox = np.argwhere(alpha > 0.8 * 255)
