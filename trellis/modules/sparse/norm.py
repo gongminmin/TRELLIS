@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from . import SparseTensor
-from . import DEBUG
 
 __all__ = [
     'SparseGroupNorm',
@@ -18,8 +17,6 @@ class SparseGroupNorm(nn.GroupNorm):
     def forward(self, input: SparseTensor) -> SparseTensor:
         nfeats = torch.zeros_like(input.feats)
         for k in range(input.shape[0]):
-            if DEBUG:
-                assert (input.coords[input.layout[k], 0] == k).all(), f"SparseGroupNorm: batch index mismatch"
             bfeats = input.feats[input.layout[k]]
             bfeats = bfeats.permute(1, 0).reshape(1, input.shape[1], -1)
             bfeats = super().forward(bfeats)

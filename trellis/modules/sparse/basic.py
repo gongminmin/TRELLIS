@@ -1,7 +1,7 @@
 from typing import *
 import torch
 import torch.nn as nn
-from . import BACKEND, DEBUG
+from . import BACKEND
 SparseTensorData = None # Lazy import
 
 
@@ -99,21 +99,6 @@ class SparseTensor:
         self._scale = kwargs.get('scale', (1, 1, 1))
         self._spatial_cache = kwargs.get('spatial_cache', {})
 
-        if DEBUG:
-            try:
-                assert self.feats.shape[0] == self.coords.shape[0], f"Invalid feats shape: {self.feats.shape}, coords shape: {self.coords.shape}"
-                assert self.shape == self.__cal_shape(self.feats, self.coords), f"Invalid shape: {self.shape}"
-                assert self.layout == self.__cal_layout(self.coords, self.shape[0]), f"Invalid layout: {self.layout}"
-                for i in range(self.shape[0]):
-                    assert torch.all(self.coords[self.layout[i], 0] == i), f"The data of batch {i} is not contiguous"
-            except Exception as e:
-                print('Debugging information:')
-                print(f"- Shape: {self.shape}")
-                print(f"- Layout: {self.layout}")
-                print(f"- Scale: {self._scale}")
-                print(f"- Coords: {self.coords}")
-                raise e
-        
     def __cal_shape(self, feats, coords):
         shape = []
         shape.append(coords[:, 0].max().item() + 1)

@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from .. import SparseTensor
-from .. import DEBUG
 from . import SPCONV_ALGO
 
 class SparseConv3d(nn.Module):
@@ -64,8 +63,6 @@ class SparseInverseConv3d(nn.Module):
             data = x.get_spatial_cache(f'conv_{self.stride}_unsorted_data')
             bwd = x.get_spatial_cache(f'conv_{self.stride}_sort_bwd')
             data = data.replace_feature(x.feats[bwd])
-            if DEBUG:
-                assert torch.equal(data.indices, x.coords[bwd]), 'Recover the original order failed'
         else:
             data = x.data
 

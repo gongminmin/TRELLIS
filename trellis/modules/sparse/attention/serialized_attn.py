@@ -3,15 +3,8 @@ from enum import Enum
 import torch
 import math
 from .. import SparseTensor
-from .. import DEBUG, ATTN
 
-if ATTN == 'xformers':
-    import xformers.ops as xops
-elif ATTN == 'flash_attn':
-    import flash_attn
-else:
-    raise ValueError(f"Unknown attention module: {ATTN}")
-
+import xformers.ops as xops
 
 __all__ = [
     'sparse_serialized_scaled_dot_product_self_attention',
@@ -152,42 +145,21 @@ def sparse_serialized_scaled_dot_product_self_attention(
     
     qkv_feats = qkv.feats[fwd_indices]      # [M, 3, H, C]
 
-    if DEBUG:
-        start = 0
-        qkv_coords = qkv.coords[fwd_indices]
-        for i in range(len(seq_lens)):
-            assert (qkv_coords[start:start+seq_lens[i], 0] == seq_batch_indices[i]).all(), f"SparseWindowedScaledDotProductSelfAttention: batch index mismatch"
-            start += seq_lens[i]
-
     if all([seq_len == window_size for seq_len in seq_lens]):
         B = len(seq_lens)
         N = window_size
         qkv_feats = qkv_feats.reshape(B, N, 3, H, C)
-        if ATTN == 'xformers':
-            q, k, v = qkv_feats.unbind(dim=2)                       # [B, N, H, C]
-            out = xops.memory_efficient_attention(q, k, v)          # [B, N, H, C]
-        elif ATTN == 'flash_attn':
-            out = flash_attn.flash_attn_qkvpacked_func(qkv_feats)   # [B, N, H, C]
-        else:
-            raise ValueError(f"Unknown attention module: {ATTN}")
+        q, k, v = qkv_feats.unbind(dim=2)                       # [B, N, H, C]
+        out = xops.memory_efficient_attention(q, k, v)          # [B, N, H, C]
         out = out.reshape(B * N, H, C)                              # [M, H, C]
     else:
-        if ATTN == 'xformers':
-            q, k, v = qkv_feats.unbind(dim=1)                       # [M, H, C]
-            q = q.unsqueeze(0)                                      # [1, M, H, C]
-            k = k.unsqueeze(0)                                      # [1, M, H, C]
-            v = v.unsqueeze(0)                                      # [1, M, H, C]
-            mask = xops.fmha.BlockDiagonalMask.from_seqlens(seq_lens)
-            out = xops.memory_efficient_attention(q, k, v, mask)[0] # [M, H, C]
-        elif ATTN == 'flash_attn':
-            cu_seqlens = torch.cat([torch.tensor([0]), torch.cumsum(torch.tensor(seq_lens), dim=0)], dim=0) \
-                        .to(qkv.device).int()
-            out = flash_attn.flash_attn_varlen_qkvpacked_func(qkv_feats, cu_seqlens, max(seq_lens)) # [M, H, C]
+        q, k, v = qkv_feats.unbind(dim=1)                       # [M, H, C]
+        q = q.unsqueeze(0)                                      # [1, M, H, C]
+        k = k.unsqueeze(0)                                      # [1, M, H, C]
+        v = v.unsqueeze(0)                                      # [1, M, H, C]
+        mask = xops.fmha.BlockDiagonalMask.from_seqlens(seq_lens)
+        out = xops.memory_efficient_attention(q, k, v, mask)[0] # [M, H, C]
 
     out = out[bwd_indices]      # [T, H, C]
-
-    if DEBUG:
-        qkv_coords = qkv_coords[bwd_indices]
-        assert torch.equal(qkv_coords, qkv.coords), "SparseWindowedScaledDotProductSelfAttention: coordinate mismatch"
 
     return qkv.replace(out)
