@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-from easydict import EasyDict as edict
 from skimage import measure
 from typing import Tuple, Optional
 
@@ -272,7 +271,7 @@ class SparseFeatures2MCMesh:
             6 channel color including normal map
             '''
             LAYOUTS['color'] = {'shape': (8, 6,), 'size': 8 * 6}
-        self.layouts = edict(LAYOUTS)
+        self.layouts = LAYOUTS
         start = 0
         for k, v in self.layouts.items():
             v['range'] = (start, start + v['size'])

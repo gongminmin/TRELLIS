@@ -2,7 +2,6 @@ from typing import *
 import torch
 import numpy as np
 from tqdm import tqdm
-from easydict import EasyDict as edict
 from .classifier_free_guidance_mixin import ClassifierFreeGuidanceSamplerMixin
 from .guidance_interval_mixin import GuidanceIntervalSamplerMixin
 
@@ -71,7 +70,7 @@ class FlowEulerSampler:
         """
         pred_x_0, pred_eps, pred_v = self._get_model_prediction(model, x_t, t, cond, **kwargs)
         pred_x_prev = x_t - (t - t_prev) * pred_v
-        return edict({"pred_x_prev": pred_x_prev, "pred_x_0": pred_x_0})
+        return {"pred_x_prev": pred_x_prev, "pred_x_0": pred_x_0}
 
     @torch.no_grad()
     def sample(
@@ -106,13 +105,13 @@ class FlowEulerSampler:
         t_seq = np.linspace(1, 0, steps + 1)
         t_seq = rescale_t * t_seq / (1 + (rescale_t - 1) * t_seq)
         t_pairs = list((t_seq[i], t_seq[i + 1]) for i in range(steps))
-        ret = edict({"samples": None, "pred_x_t": [], "pred_x_0": []})
+        ret = {"samples": None, "pred_x_t": [], "pred_x_0": []}
         for t, t_prev in tqdm(t_pairs, desc="Sampling", disable=not verbose):
             out = self.sample_once(model, sample, t, t_prev, cond, **kwargs)
-            sample = out.pred_x_prev
-            ret.pred_x_t.append(out.pred_x_prev)
-            ret.pred_x_0.append(out.pred_x_0)
-        ret.samples = sample
+            sample = out["pred_x_prev"]
+            ret["pred_x_t"].append(out["pred_x_prev"])
+            ret["pred_x_0"].append(out["pred_x_0"])
+        ret["samples"] = sample
         return ret
 
 

@@ -208,7 +208,7 @@ class TrellisImageTo3DPipeline:
             **cond,
             **sampler_params,
             verbose=True
-        ).samples
+        )["samples"]
         
         # Decode occupancy latent
         decoder = self.models['sparse_structure_decoder']
@@ -259,7 +259,7 @@ class TrellisImageTo3DPipeline:
             **cond,
             **sampler_params,
             verbose=True
-        ).samples
+        )["samples"]
 
         std = torch.tensor(self.slat_normalization['std'])[None].to(slat.device)
         mean = torch.tensor(self.slat_normalization['mean'])[None].to(slat.device)
