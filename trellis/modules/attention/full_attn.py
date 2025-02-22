@@ -10,21 +10,6 @@ __all__ = [
 ]
 
 
-def _naive_sdpa(q, k, v):
-    """
-    Naive implementation of scaled dot product attention.
-    """
-    q = q.permute(0, 2, 1, 3)   # [N, H, L, C]
-    k = k.permute(0, 2, 1, 3)   # [N, H, L, C]
-    v = v.permute(0, 2, 1, 3)   # [N, H, L, C]
-    scale_factor = 1 / math.sqrt(q.size(-1))
-    attn_weight = q @ k.transpose(-2, -1) * scale_factor
-    attn_weight = torch.softmax(attn_weight, dim=-1)
-    out = attn_weight @ v
-    out = out.permute(0, 2, 1, 3)   # [N, L, H, C]
-    return out
-
-
 @overload
 def scaled_dot_product_attention(qkv: torch.Tensor) -> torch.Tensor:
     """

@@ -1,7 +1,7 @@
 from typing import *
 import torch
 import torch.nn as nn
-SparseTensorData = None # Lazy import
+from spconv.pytorch import SparseConvTensor
 
 
 __all__ = [
@@ -22,7 +22,7 @@ class SparseTensor:
     - coords (torch.Tensor): Coordinates of the sparse tensor.
     - shape (torch.Size): Shape of the sparse tensor.
     - layout (List[slice]): Layout of the sparse tensor for each batch
-    - data (SparseTensorData): Sparse tensor data used for convolusion
+    - data (SparseConvTensor): Sparse tensor data used for convolusion
 
     NOTE:
     - Data corresponding to a same batch should be contiguous.
@@ -35,12 +35,6 @@ class SparseTensor:
     def __init__(self, data, shape: Optional[torch.Size] = None, layout: Optional[List[slice]] = None, **kwargs): ...
 
     def __init__(self, *args, **kwargs):
-        # Lazy import of sparse tensor backend
-        global SparseTensorData
-        if SparseTensorData is None:
-            import importlib
-            SparseTensorData = importlib.import_module('spconv.pytorch').SparseConvTensor
-                
         method_id = 0
         if len(args) != 0:
             method_id = 0 if isinstance(args[0], torch.Tensor) else 1
@@ -67,7 +61,7 @@ class SparseTensor:
             if layout is None:
                 layout = self.__cal_layout(coords, shape[0])
             spatial_shape = list(coords.max(0)[0] + 1)[1:]
-            self.data = SparseTensorData(feats.reshape(feats.shape[0], -1), coords, spatial_shape, shape[0], **kwargs)
+            self.data = SparseConvTensor(feats.reshape(feats.shape[0], -1), coords, spatial_shape, shape[0], **kwargs)
             self.data._features = feats
         elif method_id == 1:
             data, shape, layout = args + (None,) * (3 - len(args))
@@ -206,7 +200,7 @@ class SparseTensor:
     def replace(self, feats: torch.Tensor, coords: Optional[torch.Tensor] = None) -> 'SparseTensor':
         new_shape = [self.shape[0]]
         new_shape.extend(feats.shape[1:])
-        new_data = SparseTensorData(
+        new_data = SparseConvTensor(
             self.data.features.reshape(self.data.features.shape[0], -1),
             self.data.indices,
             self.data.spatial_shape,
